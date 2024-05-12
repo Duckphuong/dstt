@@ -1,0 +1,197 @@
+
+from collections import defaultdict
+from heapq import heappush, heappop
+import heapq
+import sys
+
+MAX = 50
+TRUE = 1
+FALSE = 0
+INF = 10**9
+adj = [[0] * MAX for _ in range(MAX)]
+cmin = sys.maxsize
+ans = sys.maxsize
+d = 0
+c = [[0] * 100 for _ in range(100)]
+visitedCities = []
+matrix = []
+x =[0]*101
+n = int(input("Nhap so thanh pho : "))  # Khởi tạo biến n và nhận giá trị từ người dùng
+z = int(input("Nhap so thanh pho can giao hang : "))  # Khởi tạo biến n và nhận giá trị từ người dùng
+gh=[]
+bdj=[]
+def enter():
+    for i in range(z):
+        x = int(input(f"Nhap thanh pho thu i {i + 1}: "))
+        gh.append(x)
+    print("Nhap ma tran ke :")
+    for _ in range(n):
+        row = list(map(int, input().split()))
+        matrix.append(row)  # Chuyển đổi thành số nguyên và gán cho adj[i][j]
+    
+    for i in range(n):
+        for j in range(n):
+            adj[i+1][j+1] = matrix[i][j]
+            if adj[i+1][j+1] != 0:
+                adj[i+1][j+1] = 1
+
+def input_graph():
+    bdj = [[0] * n for _ in range(n)]
+    for i in range(1,n+1):
+        for j in range(1,n+1):
+            bdj[i-1][j-1] = adj[i][j]
+    return bdj
+
+def euler(v):
+    st = [v]
+    ec = []
+    while st:
+        x = st[-1]
+        found = False
+        for i in range(1, n + 1):
+            if adj[x][i] > 0:
+                y = i
+                found = True
+                break
+        if found:
+            st.append(y)
+            adj[x][y] -= 1
+            adj[y][x] -= 1
+        else:
+            st.pop()
+            ec.append(x)
+    print("Euler :", *reversed(ec)-1)
+
+
+def is_valid(v, bdj, path, pos):
+    # Check if this vertex is adjacent to the previously added vertex
+    if bdj[path[pos - 1]][v] == 0:
+        return False
+
+    # Check if the vertex has already been included
+    if v in path:
+        return False
+
+    return True
+
+def hamiltonian_cycle_util(bdj, path, pos):
+    # If all vertices are included in the path, check if there's an edge from the last vertex to the first vertex
+    if pos == len(bdj):
+        if bdj[path[pos - 1]][path[0]] == 1:
+            return True
+        else:
+            return False
+
+    # Try different vertices as the next candidate
+    for v in range(len(bdj)):
+        if is_valid(v, bdj, path, pos):
+            path[pos] = v
+            if hamiltonian_cycle_util(bdj, path, pos + 1):
+                return True
+            # If adding vertex v doesn't lead to a solution, backtrack
+            path[pos] = -1
+
+    return False
+
+def hamiltonian_cycle(bdj):
+    path = [-1] * len(bdj)
+    path[0] = 0  # Start from vertex 0
+
+    if not hamiltonian_cycle_util(bdj, path, 1):
+        print("No Hamiltonian cycle exists")
+        return False
+
+    print("Hamiltonian cycle exists:")
+    for vertex in path:
+        print(vertex, end=" ")
+    print(path[0])  # Print the starting vertex again to complete the cycle
+    return True
+
+
+def dijkstra(start, end):
+    # Khởi tạo khoảng cách với giá trị vô cực cho tất cả các nút
+    distances = {node: float('inf') for node in range(len(matrix))}
+    distances[start] = 0
+    
+    # Hàng đợi ưu tiên để theo dõi nút tiếp theo cần ghé thăm
+    priority_queue = [(0, start)]
+    
+    while priority_queue:
+        # Lấy ra nút có khoảng cách nhỏ nhất từ hàng đợi ưu tiên
+        current_distance, current_node = heapq.heappop(priority_queue)
+        
+        # Nếu đến điểm kết thúc, trả về khoảng cách tới điểm đó
+        if current_node == end:
+            return current_distance
+        
+        # Khám phá các nút láng giềng của nút hiện tại
+        for neighbor, weight in enumerate(matrix[current_node]):
+            # Nếu có kết nối từ nút hiện tại đến nút láng giềng và nút láng giềng chưa được ghé thăm
+            if weight > 0:
+                distance = current_distance + weight
+                # Nếu khoảng cách mới nhỏ hơn, cập nhật khoảng cách và thêm vào hàng đợi ưu tiên
+                if distance < distances[neighbor]:
+                    distances[neighbor] = distance
+                    heapq.heappush(priority_queue, (distance, neighbor))
+    
+    # Nếu không tìm thấy đường đi từ start đến end, trả về None
+    return None
+
+def taomatran():
+    global cmin
+    for i in range(1, z+1):
+        for j in range(i + 1, z + 1):
+            c[i-1][j-1] = dijkstra( gh[i - 1], gh[j - 1])
+    for j in range(z):
+        for i in range(j , z ):
+            c[i][j] = c[j][i]
+    for i in range(z):
+        c[i][i] = 0
+    cmin = min(min(row) for row in c)
+    for i in range(1, z+1):
+        for j in range(1, z+1):
+            if c[i][j] != 0:
+                cmin = min(c[i][j], cmin)
+
+def Try(i):
+    global d, ans
+    for j in range(z):
+        if j not in visitedCities:
+            visitedCities.append(j)
+            x[i] = j
+            d += c[x[i - 1]][x[i]]
+            if i == z:
+                ans = min(ans, d + c[x[z]][1])
+            elif d + (z - i + 1) * cmin < ans:
+                Try(i + 1)
+            visitedCities.pop()
+            d -= c[x[i - 1]][x[i]]
+
+
+def main():
+    enter()
+    bdj=input_graph()
+    hamiltonian_cycle(bdj)
+    odd_count = 0
+    start_vertex = 1
+    for i in range(1, n + 1):
+        degree = sum(adj[i])
+        if degree % 2 == 1:
+            odd_count += 1
+            start_vertex = i
+    if odd_count == 2:
+        euler(start_vertex)
+    elif odd_count == 0:
+        euler(1, n)
+    else:
+        print("No Eulerian path exists")
+    
+    
+    taomatran()
+    x[1]=1
+    visitedCities.append(1)
+    Try(2)
+    print("Khoang cach ngan nhat : ",ans)
+
+if __name__ == "__main__":
+    main()
