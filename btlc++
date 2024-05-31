@@ -1,0 +1,248 @@
+#include<iostream>
+#include<queue>
+#include<bits/stdc++.h>
+#include<map>
+#include<vector>
+#include<algorithm>
+using namespace std;
+
+#define MAX 50 
+#define TRUE 1 
+#define FALSE  0 
+using ll = long long;
+const int INF = 1e9;
+const int maxn = 101;
+vector<pair<int, int>> cdj[maxn];
+typedef int arr[maxn];
+typedef int arr2[maxn][maxn];
+int d=0;
+int x[100];
+int cmin = INT_MAX,ans = INT_MAX, dem=0;
+int z,n;
+int gh[maxn];
+int c[100][100];
+int adj[MAX][MAX];
+vector<int> visitedCities;
+void enter( arr2 bdj, arr deg)
+{
+    cin >> n  >> z;
+	for(int i=0;i<z;i++){
+		cin>>gh[i];
+	}
+	vector<vector<int>> matrix(n + 1, vector<int>(n + 1, INF));
+    for(int i = 1; i <= n; i++){
+        for(int j = 1; j <= n; j++){
+            cin >> adj[i][j];
+            matrix[i][j]=adj[i][j];
+            if(adj[i][j]!=0)adj[i][j]=1;
+        }
+    }
+
+    memset(bdj, 0, sizeof(bdj));
+    memset(deg, 0, sizeof(deg));
+
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            bdj[i][j]= adj[i][j];
+            deg[i] += bdj[i][j];
+        }
+    }
+    for (int u = 1; u <= n; ++u) {
+        for (int v = 1; v <= n; ++v) {
+            if (matrix[u][v] != 0 && matrix[u][v] != INF) {
+                cdj[u].push_back({v, matrix[u][v]});
+            }
+        }
+    }
+    // for (int i = 0; i < maxn; i++) {
+    //     // Get the size of the current vector
+    //     int vectorSize = cdj[i].size();
+
+    //     // Iterate through each element of the current vector
+    //     for (int j = 0; j < vectorSize; ++j) {
+    //         // Print the elements of the current vector
+    //         cout << "Element " << j << ": " << cdj[i][j].first << " " << cdj[i][j].second << endl;
+    //     }
+    // }
+}
+
+void euler(int v){
+    stack<int> st;
+    vector<int> ec;
+    st.push(v);
+    while(!st.empty()){
+        int x = st.top();
+        int y;
+        bool found = false;
+        for(int i = 1; i <= n; i++){
+            if(adj[x][i] > 0){ 
+                y = i;
+                found = true;
+                break;
+            }
+        }
+        if(found){
+            st.push(y);
+            adj[x][y]--;
+            adj[y][x]--;
+        }
+        else{
+            st.pop();
+            ec.push_back(x);
+        }
+    }
+    for(int i = ec.size() - 1; i >= 0; i--)
+        cout<< ec[i] <<" ";
+}
+bool check_hamilton_graph(arr deg)
+{
+    for (int u = 1; u <= n; ++u)
+        if (deg[u] < 2)
+            return false;
+
+    return true;
+}
+void print_hamilton_circuit( arr circuit)
+{   
+    cout<<"Chu trinh Hamilton : ";
+    for (int i = 1; i <= n; ++i)
+        cout << circuit[i] << ' ';
+    cout << circuit[1] << endl;
+}
+void find_hamilton_circuit(int i, arr2 bdj, arr circuit, arr is_free)
+{
+    for (int v = 1; v <= n; ++v)
+        if (is_free[v] && bdj[circuit[i - 1]][v])
+        {
+            circuit[i] = v;
+            if (i < n)
+            {
+                is_free[v] = false;
+                find_hamilton_circuit(i + 1, bdj, circuit, is_free);
+                is_free[v] = true;
+            }
+            else if (bdj[v][circuit[1]])
+                print_hamilton_circuit( circuit);
+        }
+}
+void solution( arr2 bdj, arr deg, arr is_free, arr circuit)
+{
+    fill(is_free + 1, is_free + n + 1, 1);
+    circuit[1] = 1;
+
+    if (!check_hamilton_graph(deg))
+        cout << 0;
+    else
+        find_hamilton_circuit(2, bdj, circuit, is_free);
+}
+int pre[maxn];
+int dijkstra( int s,int t){
+	vector<ll> d(n + 1, INF);
+	d[s] = 0;
+    pre[s]=s;
+	priority_queue<pair<int, int>, vector<pair<int, int>> , greater<pair<int,int>>> Q;
+	Q.push({0, s});
+	while(!Q.empty()){
+		pair<int, int> top = Q.top(); Q.pop();
+		int u = top.second;
+		int kc = top.first;
+		if(kc > d[u]) continue;
+		for(auto it : cdj[u]){
+			int v = it.first;
+			int w = it.second;
+			if(d[v] > d[u] + w){
+				d[v] = d[u] + w;
+				Q.push({d[v], v});
+                pre[v]=u;
+			}
+		}
+	}
+    // for(int i=0;i<n;i++){
+    //     cout<<d[i]<<" ";
+    // }
+	return d[t];
+}
+void taomatran(){
+	for(int i=1;i<z;i++){
+		for(int j=i+1;j<=z;j++){
+			c[i][j]=dijkstra(gh[i-1],gh[j-1]);
+		}
+	}
+	for(int j=1;j<=z;j++){
+		for(int i=j+1;i<=z;i++){
+			c[i][j]=c[j][i];
+		}
+	}
+	for(int i=1;i<=z;i++){
+		c[i][i]=0;
+	}
+	for(int i=1;i<=z;i++){
+        for(int j=1;j<=z;j++){
+            if(c[i][j]!=0){
+                cmin=min(c[i][j], cmin);
+            }
+        }
+    }
+    // for(int i=0;i<z;i++){
+    //     for(int j=0;j<z;j++){
+    //         cout<<c[i][j]<<" ";
+    //     }
+    //     cout<<endl;
+    // }
+}
+
+void Try(int i){
+    ++dem;
+    for(int j=1;j<=z;j++){
+        if(find(visitedCities.begin(), visitedCities.end(), j) == visitedCities.end()){
+            visitedCities.push_back(j);
+            x[i]=j;
+            d+=c[x[i-1]][x[i]];
+            if(i==z){
+                if(d+c[x[z]][1] < ans) {
+                    ans = d+c[x[z]][1];   
+                }
+            }
+            else if(d+(z-i+1)*cmin<ans){
+                Try(i+1);
+            }
+            visitedCities.pop_back();
+            d-=c[x[i-1]][x[i]];
+        }
+    }
+}
+
+int main(){
+    ios_base::sync_with_stdio(false);
+    cin.tie(0); cout.tie(0);
+    arr2 bdj;
+    arr deg, is_free, circuit;
+    enter( bdj, deg);
+    int odd_count = 0, start_vertex = 1;
+    for(int i = 1; i <= n; ++i) {
+        int degree = 0;
+        for(int j = 1; j <= n; j++) {
+            degree += adj[i][j];
+        }
+        if(degree % 2 == 1) {
+            odd_count++;
+            start_vertex = i;
+        }
+    }
+    if(odd_count == 2){
+        cout<<"Euler : ";
+        euler(start_vertex);
+    }
+    else if(odd_count == 0)
+        euler(1);
+    else
+        cout << "No Eulerian path exists";
+    cout<<endl;
+    solution( bdj, deg, is_free, circuit);
+    taomatran();
+	x[1]=1;
+    visitedCities.push_back(1);
+    Try(2);
+    cout<<"Khoang cach ngan nhat la : "<<ans<<endl;
+    return 0;
+}
